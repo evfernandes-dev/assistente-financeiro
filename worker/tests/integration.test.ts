@@ -382,6 +382,7 @@ describe("fluxos do agente", () => {
     });
 
     expect(expenseReply).toContain("Gasto registrado: Mercado");
+    expect(expenseReply).toContain("💸");
 
     mockGroq({
       intent: "create_income",
@@ -402,6 +403,7 @@ describe("fluxos do agente", () => {
     });
 
     expect(incomeReply).toContain("Receita registrada: Salário");
+    expect(incomeReply).toContain("💰");
 
     const rows = await testDb.db.query<{
       kind: string;
@@ -439,6 +441,7 @@ describe("fluxos do agente", () => {
     });
 
     expect(reply).toContain("Não consegui interpretar");
+    expect(reply).toContain("⚠️");
     expect(consoleError).toHaveBeenCalled();
 
     const rows = await testDb.db.query<{ count: number }>(
@@ -485,6 +488,8 @@ describe("fluxos do agente", () => {
     expect(queryReply).toContain("Uber");
     expect(queryReply).not.toContain("Item do Bob");
     expect(queryReply).toContain("Saldo do período");
+    expect(queryReply).toContain("📋");
+    expect(queryReply).toContain("⚖️");
 
     mockGroq({ intent: "report", query: { period: "current_month" } });
 
@@ -500,6 +505,7 @@ describe("fluxos do agente", () => {
     expect(reportReply).toContain("Despesas");
     expect(reportReply).toContain("Alimentação");
     expect(reportReply).not.toContain("Item do Bob");
+    expect(reportReply).toContain("📊");
   });
 
   it("corrige e exclui o último lançamento via agente", async () => {
@@ -522,6 +528,7 @@ describe("fluxos do agente", () => {
     });
 
     expect(correctReply).toContain("Corrigi");
+    expect(correctReply).toContain("✏️");
 
     const corrected = await testDb.db.query<{
       amount_cents: number;
@@ -544,6 +551,7 @@ describe("fluxos do agente", () => {
     });
 
     expect(deleteReply).toContain("Excluí");
+    expect(deleteReply).toContain("🗑️");
 
     const deleted = await testDb.db.query<{ status: string }>(
       "select status from transactions where id = $1",
@@ -642,6 +650,7 @@ describe("fluxos do agente", () => {
     );
 
     expect(sentText).toContain("Gasto registrado: Mercado");
+    expect(sentText).toContain("💸");
     expect(
       fetchMock.mock.calls.some(([url]) =>
         String(url).includes("/audio/transcriptions"),

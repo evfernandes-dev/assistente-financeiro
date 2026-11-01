@@ -31,9 +31,13 @@ describe("brl", () => {
 describe("formatConfirmation", () => {
   it("descreve despesa e receita", () => {
     expect(formatConfirmation(transaction)).toContain("Gasto registrado: Mercado");
+    expect(formatConfirmation(transaction)).toContain("💸");
     expect(
       formatConfirmation({ ...transaction, kind: "income", description: "Salário" }),
     ).toContain("Receita registrada: Salário");
+    expect(
+      formatConfirmation({ ...transaction, kind: "income", description: "Salário" }),
+    ).toContain("💰");
   });
 });
 
@@ -58,12 +62,17 @@ describe("formatTransactionList", () => {
     expect(result).toContain("Mercado");
     expect(result).toContain("Salário");
     expect(result).toContain("Saldo do período");
+    expect(result).toContain("📋");
+    expect(result).toContain("⚖️");
+    expect(result).toContain("💸");
+    expect(result).toContain("💰");
   });
 
   it("informa quando não há lançamentos", () => {
     expect(formatTransactionList([], "2026-10-01", "2026-10-31", 0)).toContain(
       "Nenhum lançamento",
     );
+    expect(formatTransactionList([], "2026-10-01", "2026-10-31", 0)).toContain("📭");
   });
 });
 
@@ -86,5 +95,10 @@ describe("formatMonthlyReport", () => {
     expect(result).toContain("Saldo");
     expect(result).toContain("Alimentação");
     expect(result).toContain("Transporte");
+    expect(result).toContain("📊");
+    expect(result).toContain("🏷️");
+    expect(result).toContain("💰");
+    expect(result).toContain("💸");
+    expect(result).toContain("⚖️");
   });
 });

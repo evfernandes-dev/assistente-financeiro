@@ -325,7 +325,7 @@ export async function handleFinancialMessage(input: {
     extraction = await extractIntent(text, user, env);
   } catch (error) {
     console.error("extractIntent", error);
-    return "Não consegui interpretar sua mensagem agora. Tente novamente em instantes.";
+    return "⚠️ Não consegui interpretar sua mensagem agora. Tente novamente em instantes.";
   }
 
   switch (extraction.intent) {
@@ -338,7 +338,7 @@ export async function handleFinancialMessage(input: {
       if (!transaction || !description || amount === null || amount <= 0 || amount > MAX_AMOUNT) {
         return (
           extraction.reply_if_unclear ??
-          "Não entendi o valor ou a descrição. Pode repetir? Exemplo: mercado 87,50."
+          "🤔 Não entendi o valor ou a descrição. Pode repetir? Exemplo: mercado 87,50."
         );
       }
 
@@ -386,7 +386,7 @@ export async function handleFinancialMessage(input: {
       const latest = await getLatestTransaction(user.id, env);
 
       if (!latest) {
-        return "Não encontrei nenhum lançamento para corrigir.";
+        return "📭 Não encontrei nenhum lançamento para corrigir.";
       }
 
       const field = extraction.correction?.field;
@@ -430,7 +430,7 @@ export async function handleFinancialMessage(input: {
       }
 
       if (Object.keys(changes).length === 0) {
-        return "Não entendi o que devo corrigir. Diga o campo e o novo valor.";
+        return "🤔 Não entendi o que devo corrigir. Diga o campo e o novo valor.";
       }
 
       const updated = await updateTransaction(
@@ -443,32 +443,32 @@ export async function handleFinancialMessage(input: {
       );
 
       if (!updated) {
-        return "Não encontrei esse lançamento para corrigir.";
+        return "📭 Não encontrei esse lançamento para corrigir.";
       }
 
-      return `Corrigi o lançamento: ${updated.description} — ${brl(updated.amount_cents)}.`;
+      return `✏️ Corrigi o lançamento: ${updated.description} — ${brl(updated.amount_cents)}.`;
     }
 
     case "delete": {
       const latest = await getLatestTransaction(user.id, env);
 
       if (!latest) {
-        return "Não encontrei nenhum lançamento para excluir.";
+        return "📭 Não encontrei nenhum lançamento para excluir.";
       }
 
       const deleted = await deleteTransaction({ userId: user.id, id: latest.id }, env);
 
       if (!deleted) {
-        return "Não encontrei esse lançamento para excluir.";
+        return "📭 Não encontrei esse lançamento para excluir.";
       }
 
-      return `Excluí o lançamento: ${deleted.description} — ${brl(deleted.amount_cents)}.`;
+      return `🗑️ Excluí o lançamento: ${deleted.description} — ${brl(deleted.amount_cents)}.`;
     }
 
     default:
       return (
         extraction.reply_if_unclear ??
-        'Não entendi. Você pode registrar ("mercado 87,50"), consultar ("gastos de hoje") ou pedir um relatório ("relatório do mês").'
+        '🤔 Não entendi. Você pode registrar ("mercado 87,50"), consultar ("gastos de hoje") ou pedir um relatório ("relatório do mês").'
       );
   }
 }

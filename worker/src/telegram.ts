@@ -144,7 +144,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
 
     if (!text && audioFile) {
       if (audioFile.file_size && audioFile.file_size > MAX_TELEGRAM_AUDIO_BYTES) {
-        await sendMessage(env, chatId, "Áudio muito grande. Envie um áudio de até 20 MB.");
+        await sendMessage(env, chatId, "⚠️ Áudio muito grande. Envie um áudio de até 20 MB.");
         return;
       }
 
@@ -157,7 +157,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
       await sendMessage(
         env,
         chatId,
-        "Envie um texto ou um áudio para eu registrar ou consultar seus gastos.",
+        "🎤 Envie um texto ou um áudio para eu registrar ou consultar seus gastos.",
       );
       return;
     }
@@ -170,7 +170,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate, env: Env): Pr
     await sendMessage(
       env,
       chatId,
-      "Não consegui processar sua mensagem agora. Tente novamente em instantes.",
+      "⚠️ Não consegui processar sua mensagem agora. Tente novamente em instantes.",
     );
   }
 }

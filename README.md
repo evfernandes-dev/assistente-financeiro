@@ -98,19 +98,17 @@ Cloudflare Worker
 │   │   ├── expenses.ts         Neon queries, audit and soft delete
 │   │   └── reports.ts          Reply and report formatting
 │   ├── tests/                  Vitest suite with PGlite
+│   │   └── README.md
 │   ├── vitest.config.ts
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── wrangler.toml
 ├── database/
-│   ├── schema.sql
-│   └── migrations/001_init.sql
+│   └── schema.sql
 ├── prompts/
 │   ├── financial-agent.md
-│   ├── expense-extraction.md
-│   └── response.md
+│   └── expense-extraction.md
 ├── dashboard/                  Implementation plan (not built yet)
-├── tests/README.md
 ├── .env.example
 └── README.md
 ```

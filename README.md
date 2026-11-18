@@ -1,16 +1,14 @@
 # AI Finance Assistant
 
-AI-powered personal finance assistant on Telegram. Users send text or voice messages, and the assistant records expenses and income, answers questions, generates reports and fixes mistakes.
+AI-powered personal finance assistant on Telegram. Users send text or voice messages, and the assistant records expenses and income, answers questions, generates reports and fixes mistakes. The bot replies in Brazilian Portuguese; code and documentation are in English.
 
-- Live bot: [@economyze_bot](https://t.me/economyze_bot)
-- Health check: `https://assistente-financeiro.assistente-financeiro-worker.workers.dev/health`
-- The bot replies in Brazilian Portuguese; code and documentation are in English.
+> Rewritten from TypeScript/Cloudflare Workers to Python/FastAPI. The previous implementation remains available in the Git history.
 
 ## How it works
 
-1. Telegram sends a webhook update to a Cloudflare Worker.
-2. The Worker validates the secret token.
-3. Voice notes are transcribed with Whisper (Groq).
+1. Telegram sends a webhook update to the FastAPI app.
+2. The webhook validates the secret token.
+3. Voice notes are downloaded and transcribed with Whisper (Groq).
 4. An LLM (Qwen via Groq) extracts the intent and fields as strict JSON.
 5. The response is validated before any database write.
 6. Neon PostgreSQL stores the transaction and an audit entry.
@@ -20,7 +18,7 @@ AI-powered personal finance assistant on Telegram. Users send text or voice mess
 Telegram
    |
    v
-Cloudflare Worker -> Whisper (audio) -> LLM extraction
+FastAPI -> Whisper (audio) -> LLM extraction
    -> validation -> Neon PostgreSQL (transactions + audit) -> reply
 ```
 
@@ -49,50 +47,59 @@ The project does not train or fine-tune a model. The engineering work is in prom
 - Audit log with before/after states
 - Per-user data isolation
 - Webhook secret validation
-- 44 automated tests
+- 62 automated tests
 
 ## Stack
 
 | Layer | Technology |
 | --- | --- |
-| Language | TypeScript |
-| Runtime | Cloudflare Workers |
+| Language | Python 3.11+ |
+| Web framework | FastAPI + Uvicorn |
 | Bot | Telegram Bot API |
 | LLM | Groq (`qwen/qwen3.8-27b`) |
 | Speech-to-text | Groq Whisper (`whisper-large-v3-turbo`) |
 | Database | Neon PostgreSQL |
-| DB driver | `@neondatabase/serverless` |
-| Deploy | Wrangler 4 |
-| Tests | Vitest + PGlite |
+| DB driver | `asyncpg` |
+| Tests | pytest + respx |
+| Lint | Ruff |
 
 ## Structure
 
 ```text
-worker/src/
-├── index.ts            HTTP entrypoint and webhook authentication
-├── telegram.ts         Telegram updates and replies
-├── audio.ts            Voice note download
-├── transcription.ts    Whisper transcription
-├── ai.ts               LLM intent extraction and orchestration
-├── expenses.ts         Neon queries, audit and soft delete
-└── reports.ts          Reply and report formatting
-database/schema.sql     PostgreSQL schema
-prompts/                Agent and extraction prompts
-dashboard/              Web dashboard plan (not built yet)
+app/
+├── main.py           FastAPI entrypoint, health check and webhook authentication
+├── telegram.py       Telegram updates, message splitting and replies
+├── audio.py          Voice note download and size limits
+├── groq.py           Whisper transcription and LLM chat client
+├── ai.py             Intent extraction, validation and orchestration
+├── db.py             asyncpg queries, audit log and soft delete
+├── reports.py        Reply and report formatting
+├── config.py         Environment settings
+├── models.py         Internal dataclasses
+└── categories.py     Default categories
+database/schema.sql   PostgreSQL schema
+prompts/              Agent and extraction prompts
+dashboard/            Web dashboard plan (not built yet)
+tests/                Unit and webhook tests with fakes
 ```
 
 ## Running locally
 
-Requirements: Node.js 20+, npm, a Telegram bot, a Neon database and a Groq API key.
+Requirements: Python 3.11+, a Telegram bot, a Neon database and a Groq API key.
 
 ```powershell
-cd worker
-npm install
-npm test
-npm run dev
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -e ".[dev]"
+Copy-Item .env.example .env
 ```
 
-Create `worker/.dev.vars` and apply `database/schema.sql` in the Neon SQL Editor.
+Fill `.env`, then apply `database/schema.sql` in the Neon SQL Editor and run:
+
+```powershell
+pytest
+uvicorn app.main:app --reload
+```
 
 | Variable | Purpose |
 | --- | --- |
@@ -103,28 +110,43 @@ Create `worker/.dev.vars` and apply `database/schema.sql` in the Neon SQL Editor
 | `GROQ_MODEL` | Chat model (`qwen/qwen3.8-27b`) |
 | `GROQ_TRANSCRIPTION_MODEL` | Transcription model (`whisper-large-v3-turbo`) |
 
-Never commit `.dev.vars`, `.env` or real credentials.
+Never commit `.env`, `.env.*` or real credentials.
 
 ## Tests
 
 ```powershell
-cd worker
-npm test
-npm run typecheck
-npx wrangler deploy --dry-run
+pytest
+ruff check app tests
 ```
 
-PGlite runs the real PostgreSQL schema, including the `updated_at` trigger and audit tables. External services are mocked.
+The tests cover parsing/validation, agent flows, report formatting, webhook authentication, Telegram text/audio handling, audio limits and Groq HTTP clients. External services are mocked with `respx` and in-memory fakes. The PostgreSQL queries are not covered by an automated integration test yet; validate them against a staging Neon database before deploying.
+
+## Deployment
+
+FastAPI needs a long-running process, so the app is no longer deployable on Cloudflare Workers. Use a host such as Render, Railway or Fly.io, keep Neon as the database and configure the environment variables above.
+
+Start command:
+
+```text
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+After deploying, register the webhook:
+
+```powershell
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook" `
+  -d "url=https://<YOUR-DOMAIN>/telegram/webhook" `
+  -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
 
 ## Production and security
 
-The Worker is deployed on Cloudflare and the Telegram webhook is registered at `/telegram/webhook`. Secrets are stored with `wrangler secret put`.
-
 - Webhook requests require the `X-Telegram-Bot-Api-Secret-Token` header.
-- Secret comparison uses SHA-256 digests.
+- Secret comparison uses constant-time comparison.
 - Every query filters by `user_id`.
 - Corrections and deletions are recorded in `audit_log`; deletions are logical (`status = 'deleted'`).
 - Audio size limits are enforced before download and transcription.
+- `.env` is ignored by Git; production secrets belong in the hosting provider.
 
 ## Limitations and roadmap
 
